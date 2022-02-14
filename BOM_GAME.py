@@ -1,4 +1,5 @@
 import random
+import pgzrun
 
 WIDTH = 1000
 HEIGHT = 600
@@ -257,3 +258,5 @@ for i in range(enemyCount):
     enemy.dyingNum = 6
     enemies.append(enemy)
     actors.append(enemy)
+
+pgzrun.go()
