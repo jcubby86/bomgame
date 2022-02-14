@@ -124,17 +124,17 @@ def moveSheep(sheepSpeed):
 
 def playerMovement():
     if ammon.isDead: return
-    if keyboard.left and ammon.left > 0 and not ammon.isAttacking:
+    if (keyboard.left or keyboard.a) and ammon.left > 0 and not ammon.isAttacking:
         ammon.x -= ammonSpeed
         ammon.dir = "left"
-    if keyboard.right and ammon.right < WIDTH and not ammon.isAttacking:
+    if (keyboard.right or keyboard.d) and ammon.right < WIDTH and not ammon.isAttacking:
         ammon.x += ammonSpeed
         ammon.dir =  "right"
-    if keyboard.up and ammon.top > 0 and not ammon.isAttacking:
+    if (keyboard.up or keyboard.w) and ammon.top > 0 and not ammon.isAttacking:
         ammon.y -= ammonSpeed
-    if keyboard.down and ammon.bottom < HEIGHT and not ammon.isAttacking:
+    if (keyboard.down or keyboard.s) and ammon.bottom < HEIGHT and not ammon.isAttacking:
         ammon.y += ammonSpeed
-    ammon.isMoving = keyboard.left or keyboard.right or keyboard.up or keyboard.down
+    ammon.isMoving = keyboard.left or keyboard.right or keyboard.up or keyboard.down or keyboard.a or keyboard.d or keyboard.w or keyboard.s
 
 def updateSprite(spr):
     if spr.isDead:
@@ -222,7 +222,7 @@ ammon.attacking = 0
 ammon.isDead = False
 ammon.dying = 0
 ammon.dyingNum = 5
-ammonSpeed = 5;
+ammonSpeed = 5
 actors.append(ammon)
 
 arms = []
