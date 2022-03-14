@@ -18,10 +18,10 @@ def draw():
         if sRect.colliderect(a):
             a.draw()
 
-    if sheepCount == 0 and timer < 100:
+    if gameState == 'defend':
         timer += 1
         screen.draw.text("DEFEND THE FLOCKS!", center=(WIDTH/2, HEIGHT/4), fontsize = 72)
-    if enemyCount == 0:
+    if gameState == 'win':
         timer += 1
         screen.draw.text("YOU DEFENDED THE KING'S FLOCKS!!!", center=(WIDTH/2, HEIGHT/4), fontsize = 60)
     if ammon.isDead:
@@ -31,22 +31,23 @@ def draw():
 
 
 def update():
-    global sheepDir, enemyCount
+    global sheepDir, enemiesKilled
     if timer > 500:
         return
     updateSprite(ammon)
-    if sheepCount > 0:
+    if gameState == 'sheep-off':
         moveSheep(3)
         if ammon.x > WIDTH/2:
             ammon.x -= ammonSpeed
         else:
             ammon.isMoving = False
         return
-    if enemyCount == 0:
-        if sheepDir == "right":
-            sheepDir = "left"
-            for s in sheep:
-                s.bottom = random.randint(s.height, HEIGHT)
+    if gameState == 'main' and enemiesKilled == enemyCount:
+        updateState('win')
+        sheepDir = "left"
+        for s in sheep:
+            s.bottom = random.randint(s.height, HEIGHT)
+    if gameState == 'win':
         moveSheep(-2)
 
     playerMovement()
@@ -71,7 +72,7 @@ def update():
             makeArm(enemy)
             enemy.isDead = True
             enemy.dir = "left"
-            enemyCount -= 1
+            enemiesKilled += 1
         if enemy.isAttacking and enemy.attacking//slowAttack > 1 and checkattack(enemy, ammon):
             ammon.isDead = True
 
@@ -105,7 +106,7 @@ def makeArm(enemy):
     actors.append(arm)
 
 def moveSheep(sheepSpeed):
-    global sheepCount
+    global gameState
     for s in sheep:
         s.costume += 1
         if s.costume % slowWalk == 0:
@@ -118,9 +119,9 @@ def moveSheep(sheepSpeed):
             s.y += sheepSpeed * s.dir
         if random.randint(1,30) == 1:
             s.dir = -1 if random.randint(0,1) == 0 else 1
-        if s.left > WIDTH and not s.isCounted:
-            sheepCount -= 1
-            s.isCounted = True
+    if gameState == 'sheep-off' and lastSheep.left > WIDTH:
+        updateState('defend')
+        clock.schedule_unique(mainState, 2)
 
 def playerMovement():
     if ammon.isDead: return
@@ -193,8 +194,18 @@ def sortActors():
     global actors
     actors = sort(actors)
 
+def updateState(newState):
+    global gameState
+    gameState = newState
+    print(newState)
+
+def mainState():
+    updateState('main')
+
 folder = "bom_game/"
 img = "/tile0"
+
+updateState("sheep-off")
 
 walkingOffset = 0
 walkingNum = 6
@@ -227,21 +238,24 @@ actors.append(ammon)
 
 arms = []
 enemies = []
-enemyCount = 10
+enemyCount = 1
+enemiesKilled = 0
 enemySpeed = 3
 enemyDeadSpeed = 5
 
 timer = 0
 sheepCount = 10
 sheepDir = "right"
+lastSheep = None
 sheep = []
 for i in range(sheepCount):
     s = Actor(folder + sheepDir + "/sheep1", (random.randint(0, WIDTH/2), random.randint(0, HEIGHT)))
     s.costume = random.randint(0,7)
     s.dir = -1 if random.randint(0,1) == 0 else 1
-    s.isCounted = False
     sheep.append(s)
     actors.append(s)
+    if lastSheep == None or s.x < lastSheep.x:
+        lastSheep = s
 
 for i in range(enemyCount):
     enemy = Actor(getImg("left", 0, standingOffset, 0))
