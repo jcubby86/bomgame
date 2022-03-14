@@ -209,7 +209,7 @@ def sort(l):
 
 
 def sortActors():
-    return arms + sort(actors)
+    return sort(arms) + sort(actors)
 
 
 def updateState(newState):
