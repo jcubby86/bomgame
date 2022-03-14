@@ -4,6 +4,7 @@ import pgzrun
 WIDTH = 1000
 HEIGHT = 600
 
+
 def getImg(direction, offset1, offset2, offset3):
     return folder + direction + img + str(offset1 + offset2 + offset3)
 
@@ -16,8 +17,7 @@ def draw():
         screen.draw.text("PRESS SPACE TO START", center=(WIDTH/2, HEIGHT/4), fontsize = 60)
         return
 
-    sortActors()
-    for a in actors:
+    for a in sortActors():
         if sRect.colliderect(a):
             a.draw()
 
@@ -109,7 +109,6 @@ def makeArm(enemy):
     arm.stop = enemy.bottom
     arm.speed = random.randint(5,10)
     arms.append(arm)
-    actors.append(arm)
 
 
 def moveSheep(sheepSpeed):
@@ -210,8 +209,7 @@ def sort(l):
 
 
 def sortActors():
-    global actors
-    actors = sort(actors)
+    return arms + sort(actors)
 
 
 def updateState(newState):
@@ -295,7 +293,7 @@ grass = Actor("bom_game/grass")
 sRect = ZRect(0,0,WIDTH,HEIGHT)
 
 ammonSpeed = 5
-enemyCount = 2
+enemyCount = 10
 enemySpeed = 3
 enemyDeadSpeed = 5
 sheepCount = 10
