@@ -14,7 +14,7 @@ def draw():
     grass.draw()
     
     if gameState == 'start':
-        screen.draw.text("PRESS SPACE TO START", center=(WIDTH/2, HEIGHT/4), fontsize = 60)
+        screen.draw.text("PRESS SPACE TO START", center=(WIDTH//2, HEIGHT//4), fontsize = 60)
         return
 
     for a in sortActors():
@@ -22,13 +22,13 @@ def draw():
             a.draw()
 
     if gameState == 'defend':
-        screen.draw.text("DEFEND THE FLOCKS!", center=(WIDTH/2, HEIGHT/4), fontsize = 72)
+        screen.draw.text("DEFEND THE FLOCKS!", center=(WIDTH//2, HEIGHT//4), fontsize = 72)
     elif gameState == 'win':
-        screen.draw.text("YOU DEFENDED THE KING'S FLOCKS!!!", center=(WIDTH/2, HEIGHT/4), fontsize = 60)
+        screen.draw.text("YOU DEFENDED THE KING'S FLOCKS!!!", center=(WIDTH//2, HEIGHT//4), fontsize = 60)
     elif gameState == 'lose':
-        screen.draw.text("THE LAMANITES SCATTERED THE SHEEP", center=(WIDTH/2, HEIGHT/4), fontsize = 60)
+        screen.draw.text("THE BANDITS SCATTERED THE SHEEP", center=(WIDTH//2, HEIGHT//4), fontsize = 60)
     elif gameState == 'again':
-        screen.draw.text("PRESS SPACE TO PLAY AGAIN", center=(WIDTH/2, HEIGHT/4), fontsize = 60)
+        screen.draw.text("PRESS SPACE TO PLAY AGAIN", center=(WIDTH//2, HEIGHT//4), fontsize = 60)
 
 
 def update():
@@ -37,7 +37,7 @@ def update():
     if gameState == 'sheep-off':
         updateSprite(ammon)
         moveSheep(3)
-        if ammon.x > WIDTH/2:
+        if ammon.x > WIDTH//2:
             ammon.x -= ammonSpeed
         else:
             ammon.isMoving = False
@@ -229,7 +229,7 @@ def reset():
     global actors, ammon, arms, enemies, sheep, enemiesKilled, sheepDir, lastSheep
     actors = []
 
-    ammon = Actor(getImg("right", 24, standingOffset, 0), (WIDTH * 1.5, HEIGHT/2))
+    ammon = Actor(getImg("right", 24, standingOffset, 0), (WIDTH * 1.5, HEIGHT//2))
     ammon.offset = 24
     ammon.isMoving = True
     ammon.walking = 0
@@ -249,7 +249,7 @@ def reset():
     lastSheep = None
     sheep = []
     for i in range(sheepCount):
-        s = Actor(folder + sheepDir + "/sheep1", (random.randint(0, WIDTH/2), random.randint(0, HEIGHT)))
+        s = Actor(folder + sheepDir + "/sheep1", (random.randint(0, WIDTH//2), random.randint(0, HEIGHT)))
         s.costume = random.randint(0,7)
         s.dir = -1 if random.randint(0,1) == 0 else 1
         sheep.append(s)
@@ -259,8 +259,8 @@ def reset():
 
     for i in range(enemyCount):
         enemy = Actor(getImg("left", 0, standingOffset, 0))
-        enemy.x = (WIDTH/2) + ((500*(i+1)) * (-1 if random.randint(0,1) == 1 else 1))
-        enemy.y = (HEIGHT/2) + ((500*(i+1)) * (-1 if random.randint(0,1) == 1 else 1))
+        enemy.x = (WIDTH//2) + ((500*(i+1)) * (-1 if random.randint(0,1) == 1 else 1))
+        enemy.y = (HEIGHT//2) + ((500*(i+1)) * (-1 if random.randint(0,1) == 1 else 1))
         enemy.offset = 0
         enemy.isMoving = False
         enemy.walking = 0
