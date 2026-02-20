@@ -9,31 +9,36 @@ export class Game extends Scene {
   preload() {
     this.load.setPath('assets');
 
-    this.load.image('star', 'star.png');
-    this.load.image('background', 'bg.png');
-    this.load.image('logo', 'logo.png');
+    this.load.image('background', 'grass.png');
+    this.load.spritesheet('ammon', 'ammon.png', {
+      frameWidth: 160,
+      frameHeight: 160,
+      startFrame: 0,
+      endFrame: 14
+    });
+    this.load.spritesheet('sheep', 'sheep.png', {
+      frameWidth: 160,
+      frameHeight: 160,
+      startFrame: 0,
+      endFrame: 1
+    });
+    this.load.spritesheet('bandit', 'bandit.png', {
+      frameWidth: 160,
+      frameHeight: 160,
+      startFrame: 0,
+      endFrame: 15
+    });
+    this.load.image('arm', 'arm.png');
   }
 
   create() {
     this.add.image(512, 384, 'background');
-    this.add.image(512, 350, 'logo').setDepth(100);
-    this.add
-      .text(
-        512,
-        490,
-        'Make something fun!\nand share it with us:\nsupport@phaser.io',
-        {
-          fontFamily: 'Arial Black',
-          fontSize: 38,
-          color: '#ffffff',
-          stroke: '#000000',
-          strokeThickness: 8,
-          align: 'center'
-        }
-      )
-      .setOrigin(0.5)
-      .setDepth(100);
+    this.add.sprite(512, 384, 'ammon', 14);
+    this.add.sprite(300, 300, 'sheep', 1);
+    this.add.sprite(700, 300, 'bandit', 15);
 
     EventBus.emit('current-scene-ready', this);
   }
+
+  update() {}
 }
