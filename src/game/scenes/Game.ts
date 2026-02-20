@@ -2,6 +2,10 @@ import { Scene } from 'phaser';
 import { EventBus } from '../EventBus';
 
 export class Game extends Scene {
+  private ammon: Phaser.Physics.Arcade.Sprite;
+  private sheep: Phaser.Physics.Arcade.Sprite[];
+  private bandits: Phaser.Physics.Arcade.Sprite[];
+
   constructor() {
     super('Game');
   }
@@ -31,34 +35,52 @@ export class Game extends Scene {
     this.load.image('arm', 'arm.png');
   }
 
-  create() {
-    this.add.image(512, 384, 'background');
-    const ammon = this.add.sprite(512, 384, 'ammon', 14);
-    const sheep = this.add.sprite(300, 300, 'sheep', 1);
-    const bandit = this.add.sprite(700, 300, 'bandit', 15);
+  createAmmon() {
+    this.ammon = this.physics.add.sprite(512, 384, 'ammon', 6);
+    this.ammon.setOrigin(0, 0);
+    this.ammon.setCollideWorldBounds(true);
 
-    ammon.anims.create({
+    this.ammon.anims.create({
       key: 'walk',
-      frames: ammon.anims.generateFrameNumbers('ammon', { start: 0, end: 5 }),
+      frames: this.anims.generateFrameNumbers('ammon', {
+        start: 0,
+        end: 5
+      }),
       frameRate: 10,
       repeat: -1
     });
-    ammon.anims.create({
-      key: 'stand',
-      frames: ammon.anims.generateFrameNumbers('ammon', { start: 6, end: 6 }),
-      frameRate: 10
-    });
-    ammon.anims.create({
+    this.ammon.anims.create({
       key: 'attack',
-      frames: ammon.anims.generateFrameNumbers('ammon', { start: 7, end: 9 }),
+      frames: this.anims.generateFrameNumbers('ammon', {
+        start: 6,
+        end: 9,
+        frames: [6, 7, 8, 9, 6]
+      }),
       frameRate: 10
     });
-    ammon.anims.create({
+    this.ammon.anims.create({
       key: 'die',
-      frames: ammon.anims.generateFrameNumbers('ammon', { start: 10, end: 14 }),
+      frames: this.anims.generateFrameNumbers('ammon', {
+        start: 10,
+        end: 14
+      }),
       frameRate: 10
     });
 
+    const spaceBar = this.input.keyboard?.addKey(
+      Phaser.Input.Keyboard.KeyCodes.SPACE
+    );
+
+    spaceBar?.on('down', () => {
+      console.log("Spacebar pressed");
+      this.ammon.play('attack');
+    });
+  }
+
+  create() {
+    this.add.image(0, 0, 'background').setOrigin(0, 0);
+    this.createAmmon();
+    
     this.anims.create({
       key: 'sheep-walk',
       frames: this.anims.generateFrameNumbers('sheep', { start: 0, end: 1 }),
@@ -74,7 +96,11 @@ export class Game extends Scene {
     });
     this.anims.create({
       key: 'bandit-attack',
-      frames: this.anims.generateFrameNumbers('bandit', { start: 7, end: 9 }),
+      frames: this.anims.generateFrameNumbers('bandit', {
+        start: 6,
+        end: 9,
+        frames: [6, 7, 8, 9, 6]
+      }),
       frameRate: 10
     });
     this.anims.create({
@@ -84,13 +110,46 @@ export class Game extends Scene {
       repeat: -1
     });
 
-    bandit.play('bandit-walk');
-    sheep.play('sheep-walk');
-    ammon.play('walk');
-
-
     EventBus.emit('current-scene-ready', this);
   }
 
-  update() {}
+  update() {
+    const cursors = this.input.keyboard?.createCursorKeys();
+
+    cursors?.left.on('down', () => {
+      this.ammon.play('walk', true);
+      
+    });
+
+    let movingX = false, movingY = false;
+
+    if (cursors?.left.isDown) {
+      this.ammon.setVelocityX(-200);
+      this.ammon.flipX = true;
+      movingX = true;
+    } else if (cursors?.right.isDown) {
+      this.ammon.setVelocityX(200);
+      this.ammon.flipX = false;
+      movingX = true;
+    }
+    if (cursors?.up.isDown) {
+      this.ammon.setVelocityY(-200);
+      movingY = true;
+    } else if (cursors?.down.isDown) {
+      this.ammon.setVelocityY(200);
+      movingY = true;
+    }
+
+    if (!movingX && !movingY) {
+      this.ammon.setVelocity(0, 0);
+      this.ammon.stop();
+      this.ammon.setFrame(6);
+    } else if (!movingX) {
+      this.ammon.setVelocityX(0);
+      this.ammon.play('walk', true);
+    } else if (!movingY) {
+      this.ammon.setVelocityY(0);
+      this.ammon.play('walk', true);
+    }
+  }
 }
