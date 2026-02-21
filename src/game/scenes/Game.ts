@@ -3,8 +3,12 @@ import { EventBus } from '../EventBus';
 
 export class Game extends Scene {
   private player: Phaser.Physics.Arcade.Sprite;
+  private playerDead = false;
   private sheep: Phaser.Physics.Arcade.Sprite[];
   private bandits: Phaser.Physics.Arcade.Sprite[];
+  private banditsKilled = 0;
+  private arms: Phaser.Physics.Arcade.Sprite[] = [];
+  private armTargets: Map<number, { y: number }> = new Map();
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
 
   constructor() {
@@ -34,6 +38,17 @@ export class Game extends Scene {
       endFrame: 15
     });
     this.load.image('arm', 'arm.png');
+  }
+
+  checkBanditPlayerCollision(bandit: Phaser.Physics.Arcade.Sprite, limit = 60) {
+    return (
+      Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        bandit.x,
+        bandit.y
+      ) <= limit
+    );
   }
 
   createPlayer() {
@@ -69,11 +84,40 @@ export class Game extends Scene {
     });
 
     this.cursors?.space?.on('down', () => {
+      if (this.playerDead) return;
       this.player.play('attack');
     });
 
     this.player.on('animationcomplete-attack', () => {
-      this.player.chain('walk');
+      this.bandits.forEach((bandit) => {
+        if (this.checkBanditPlayerCollision(bandit)) {
+          const arm = this.physics.add.sprite(
+            bandit.x + 15,
+            bandit.y + 15,
+            'arm'
+          );
+          arm.setFlipX(bandit.flipX);
+          if (arm.flipX) {
+            arm.setX(arm.x - 30);
+          }
+          arm.setDepth(arm.y);
+
+          const index = this.arms.push(arm) - 1;
+          this.armTargets.set(index, { y: arm.y + 95 });
+
+          arm.setVelocityY(Phaser.Math.Between(-200, -100));
+          arm.setAngularVelocity(Phaser.Math.Between(-200, 200));
+          arm.setAccelerationY(500);
+
+          bandit.play('bandit-run');
+          bandit.setVelocity(-200, 0);
+          bandit.setFlipX(true);
+          bandit.setDisplayOrigin(90, 80);
+          this.banditsKilled += 1;
+        }
+      });
+
+      this.player.play('walk');
     });
   }
 
@@ -129,18 +173,27 @@ export class Game extends Scene {
     });
 
     this.bandits = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 1; i++) {
       const bandit = this.physics.add.sprite(
         Phaser.Math.Between(100, 900),
         Phaser.Math.Between(100, 700),
         'bandit'
       );
-      bandit.play('bandit-walk');
+
+      bandit.on('animationcomplete-bandit-attack', () => {
+        if (this.checkBanditPlayerCollision(bandit) && !this.playerDead) {
+          this.playerDead = true;
+          this.player.play('die', true);
+        }
+        bandit.play('bandit-walk');
+      });
+
       this.bandits.push(bandit);
     }
   }
 
   create() {
+    this.physics.world.defaults.debugShowBody = true;
     this.cursors = this.input.keyboard?.createCursorKeys();
     this.add.image(0, 0, 'background').setOrigin(0, 0);
     this.createPlayer();
@@ -155,7 +208,7 @@ export class Game extends Scene {
 
     this.player.setVelocity(0);
 
-    if (this.player.anims.currentAnim?.key === 'attack') {
+    if (['attack', 'die'].includes(this.player.anims.currentAnim?.key || '')) {
       return;
     }
 
@@ -190,7 +243,10 @@ export class Game extends Scene {
 
   updateSheep() {
     this.sheep.forEach((sheep) => {
-      if (Phaser.Math.Between(0, 100) < 1) {
+      if (this.banditsKilled === this.bandits.length) {
+        sheep.setVelocityX(-120);
+        sheep.setFlipX(true);
+      } else if (Phaser.Math.Between(0, 100) < 1) {
         sheep.setVelocityY(-1 * sheep.body!.velocity.y);
       }
     });
@@ -200,14 +256,23 @@ export class Game extends Scene {
     this.bandits.forEach((bandit) => {
       const speed = 120;
 
-      const distanceToPlayer = Phaser.Math.Distance.Between(
-        bandit.x,
-        bandit.y,
-        this.player.x,
-        this.player.y
-      );
+      if (
+        ['bandit-attack', 'bandit-run'].includes(
+          bandit.anims.currentAnim?.key || ''
+        )
+      ) {
+        return;
+      }
 
-      if (distanceToPlayer < speed / 2) {
+      if (this.playerDead) {
+        bandit.play('bandit-walk', true);
+        bandit.setVelocity(speed, 0);
+        bandit.setFlipX(false);
+        bandit.setDisplayOrigin(70, 80);
+        return;
+      }
+
+      if (this.checkBanditPlayerCollision(bandit, speed / 2)) {
         bandit.play('bandit-attack', true);
         bandit.setVelocity(0);
         return;
@@ -234,10 +299,25 @@ export class Game extends Scene {
     });
   }
 
+  updateArms() {
+    this.arms.forEach((arm, index) => {
+      const target = this.armTargets.get(index);
+      if (!target) return;
+
+      // Check if arm has reached or passed the target Y position
+      if (arm.y >= target.y) {
+        arm.setVelocity(0, 0);
+        arm.setAcceleration(0, 0);
+        arm.setAngularVelocity(0);
+      }
+    });
+  }
+
   update() {
     this.updatePlayer();
     this.updateSheep();
     this.updateBandits();
+    this.updateArms();
 
     // Sort sprites by Y position for depth
     this.player.setDepth(this.player.y);
