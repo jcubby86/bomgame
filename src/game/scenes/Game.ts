@@ -159,15 +159,14 @@ export class Game extends Scene {
       return;
     }
 
-    const offsetX = 10;
     if (this.cursors?.left.isDown) {
       this.player.setVelocityX(-speed);
       this.player.setFlipX(true);
-      this.player.setDisplayOrigin(80 + offsetX, 80);
+      this.player.setDisplayOrigin(90, 80);
     } else if (this.cursors?.right.isDown) {
       this.player.setVelocityX(speed);
       this.player.setFlipX(false);
-      this.player.setDisplayOrigin(80 - offsetX, 80);
+      this.player.setDisplayOrigin(70, 80);
     }
 
     if (this.cursors?.up.isDown) {
@@ -197,9 +196,48 @@ export class Game extends Scene {
     });
   }
 
+  updateBandits() {
+    this.bandits.forEach((bandit) => {
+      const speed = 120;
+
+      const distanceToPlayer = Phaser.Math.Distance.Between(
+        bandit.x,
+        bandit.y,
+        this.player.x,
+        this.player.y
+      );
+
+      if (distanceToPlayer < speed / 2) {
+        bandit.play('bandit-attack', true);
+        bandit.setVelocity(0);
+        return;
+      }
+
+      if (this.player.x < bandit.x - speed / 2) {
+        bandit.setVelocityX(-speed);
+        bandit.setFlipX(true);
+        bandit.setDisplayOrigin(90, 80);
+      } else if (this.player.x > bandit.x + speed / 2) {
+        bandit.setVelocityX(speed);
+        bandit.setFlipX(false);
+        bandit.setDisplayOrigin(70, 80);
+      }
+
+      if (this.player.y < bandit.y - speed / 2) {
+        bandit.setVelocityY(-speed);
+      } else if (this.player.y > bandit.y + speed / 2) {
+        bandit.setVelocityY(speed);
+      }
+
+      bandit.body?.velocity.normalize().scale(speed);
+      bandit.play('bandit-walk', true);
+    });
+  }
+
   update() {
     this.updatePlayer();
     this.updateSheep();
+    this.updateBandits();
 
     // Sort sprites by Y position for depth
     this.player.setDepth(this.player.y);
