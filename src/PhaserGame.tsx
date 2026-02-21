@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useLayoutEffect, useRef } from 'react';
-import StartGame from './game/main';
+import StartGame from './game/StartGame';
 import { EventBus } from './game/EventBus';
 
 export interface IRefPhaserGame {
