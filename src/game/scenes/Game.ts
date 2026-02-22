@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import { EventBus } from '../EventBus';
+import { WIDTH, HEIGHT } from '../StartGame';
 
 const WALK_SPEED = 120;
 const RUN_SPEED = 200;
@@ -13,6 +14,7 @@ export class Game extends Scene {
   private armTargets: Map<number, number> = new Map();
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private state: 'play' | 'win' | 'lose' | 'start' = 'start';
+  private text: Phaser.GameObjects.Text;
 
   constructor() {
     super('Game');
@@ -64,6 +66,7 @@ export class Game extends Scene {
       bandit.setFlipX(false);
       bandit.setDisplayOrigin(70, 80);
     });
+    this.updateText('You Lose!');
   }
 
   gameWon() {
@@ -71,11 +74,32 @@ export class Game extends Scene {
     this.sheep.forEach((sheep) => {
       sheep.setVelocity(-WALK_SPEED, 0);
       sheep.setFlipX(true);
-      if (sheep.x >= 1100) {
-        sheep.setX(1024 + Phaser.Math.Between(50, 200));
+      if (sheep.x >= WIDTH + 100) {
+        sheep.setX(WIDTH + Phaser.Math.Between(50, 200));
       }
       sheep.setY(Phaser.Math.Between(100, 700));
     });
+    this.updateText('You Win!');
+  }
+
+  updateText(message?: string) {
+    if (this.text) {
+      this.text.destroy();
+    }
+
+    if (message) {
+      this.text = this.add
+        .text(512, 384, message, {
+          fontSize: '48px',
+          fontStyle: 'bold',
+          fontFamily: 'Arial',
+          color: '#fff',
+          padding: { x: 20, y: 10 },
+          align: 'center'
+        })
+        .setOrigin(0.5)
+        .setDepth(1000);
+    }
   }
 
   createArm(bandit: Phaser.Physics.Arcade.Sprite) {
@@ -109,7 +133,7 @@ export class Game extends Scene {
   }
 
   createPlayer() {
-    this.player = this.physics.add.sprite(512, 384, 'ammon', 6);
+    this.player = this.physics.add.sprite(WIDTH / 2, HEIGHT / 2, 'ammon', 6);
     this.player.setOrigin(0.5, 0.5);
     this.player.setCollideWorldBounds(true);
 
@@ -173,8 +197,8 @@ export class Game extends Scene {
     this.sheep = [];
     for (let i = 0; i < 5; i++) {
       const sheep = this.physics.add.sprite(
-        Phaser.Math.Between(100, 900),
-        Phaser.Math.Between(100, 700),
+        Phaser.Math.Between(0, WIDTH),
+        Phaser.Math.Between(0, HEIGHT),
         'sheep'
       );
       sheep.play('sheep-run');
@@ -209,11 +233,16 @@ export class Game extends Scene {
 
     this.bandits = [];
     for (let i = 0; i < 3; i++) {
-      const bandit = this.physics.add.sprite(
-        Phaser.Math.Between(-1000, 2000),
-        Phaser.Math.Between(-1000, 2000),
-        'bandit'
-      );
+      const x =
+        Phaser.Math.Between(0, 1) === 0
+          ? -100 - (i * WIDTH) / 2
+          : 100 + WIDTH + (i * WIDTH) / 2;
+      const y =
+        Phaser.Math.Between(0, 1) === 0
+          ? -100 - (i * HEIGHT) / 2
+          : 100 + HEIGHT + (i * HEIGHT) / 2;
+
+      const bandit = this.physics.add.sprite(x, y, 'bandit');
 
       bandit.on('animationcomplete-bandit-attack', () => {
         if (this.checkBanditPlayerCollision(bandit) && this.state === 'play') {
@@ -233,6 +262,8 @@ export class Game extends Scene {
     this.createPlayer();
     this.createSheep();
     this.createBandits();
+
+    this.updateText('Protect the Sheep!');
 
     EventBus.emit('current-scene-ready', this);
   }
@@ -281,8 +312,9 @@ export class Game extends Scene {
         }
       });
 
-      if (this.sheep.every((sheep) => sheep.x >= 1100)) {
+      if (this.sheep.every((sheep) => sheep.x >= WIDTH + 100)) {
         this.state = 'play';
+        this.updateText();
       }
     }
   }
