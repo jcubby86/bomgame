@@ -301,6 +301,12 @@ export class Game extends Scene {
   }
 
   create() {
+    // Reset game state
+    this.state = 'start';
+    this.banditsKilled = 0;
+    this.arms = [];
+    this.armTargets.clear();
+
     this.physics.world.defaults.debugShowBody = true;
     this.cursors = this.input.keyboard?.createCursorKeys();
     const bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
