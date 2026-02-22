@@ -9,6 +9,20 @@ const PLAYER_SPEED = 200;
 const SHEEP_COUNT = 5;
 const BANDIT_COUNT = 5;
 
+const ATTACK_RANGE = 50;
+
+const SPRITE_SIZE = 160;
+const SPRITE_OFFSET_X = 10;
+const ARM_OFFSET = 15;
+
+function originY() {
+  return SPRITE_SIZE / 2;
+}
+
+function originX(flipX: boolean) {
+  return SPRITE_SIZE / 2 + (flipX ? SPRITE_OFFSET_X : -SPRITE_OFFSET_X);
+}
+
 function between(min: number, max: number) {
   return Phaser.Math.Between(min, max);
 }
@@ -37,36 +51,43 @@ export class Game extends Scene {
 
     this.load.image('background', 'grass.png');
     this.load.spritesheet('ammon', 'ammon.png', {
-      frameWidth: 160,
-      frameHeight: 160,
+      frameWidth: SPRITE_SIZE,
+      frameHeight: SPRITE_SIZE,
       startFrame: 0,
       endFrame: 14
     });
     this.load.spritesheet('sheep', 'sheep.png', {
-      frameWidth: 160,
-      frameHeight: 160,
+      frameWidth: SPRITE_SIZE,
+      frameHeight: SPRITE_SIZE,
       startFrame: 0,
       endFrame: 1
     });
     this.load.spritesheet('bandit', 'bandit.png', {
-      frameWidth: 160,
-      frameHeight: 160,
+      frameWidth: SPRITE_SIZE,
+      frameHeight: SPRITE_SIZE,
       startFrame: 0,
       endFrame: 15
     });
     this.load.image('arm', 'arm.png');
   }
 
-  checkBanditPlayerCollision(bandit: Phaser.Physics.Arcade.Sprite) {
-    return (
-      Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        bandit.x,
-        bandit.y
-      ) <=
-      BANDIT_SPEED / 2
-    );
+  checkAttack(
+    attacker: Phaser.Physics.Arcade.Sprite,
+    defender: Phaser.Physics.Arcade.Sprite = this.player
+  ) {
+    if (attacker.flipX) {
+      return (
+        attacker.x - ATTACK_RANGE < defender.x &&
+        attacker.x > defender.x &&
+        Math.abs(attacker.y - defender.y) < ATTACK_RANGE
+      );
+    } else {
+      return (
+        attacker.x + ATTACK_RANGE > defender.x &&
+        attacker.x < defender.x &&
+        Math.abs(attacker.y - defender.y) < ATTACK_RANGE
+      );
+    }
   }
 
   gameLost() {
@@ -76,7 +97,7 @@ export class Game extends Scene {
       if (bandit.anims.currentAnim?.key === 'bandit-run') return;
       bandit.setVelocity(BANDIT_SPEED, 0);
       bandit.setFlipX(false);
-      bandit.setDisplayOrigin(70, 80);
+      bandit.setDisplayOrigin(originX(false), originY());
     });
     this.updateText('You Lose!');
   }
@@ -86,7 +107,7 @@ export class Game extends Scene {
     this.sheep.forEach((sheep) => {
       sheep.setVelocity(-SHEEP_SPEED, 0);
       sheep.setFlipX(true);
-      sheep.setX(WIDTH + between(100, WIDTH));
+      sheep.setX(WIDTH + between(SPRITE_SIZE / 2, WIDTH));
       sheep.setY(between(0, HEIGHT));
     });
     this.updateText('You Win!');
@@ -114,15 +135,15 @@ export class Game extends Scene {
 
   createArm(bandit: Phaser.Physics.Arcade.Sprite) {
     const arm = this.physics.add.sprite(
-      bandit.x + (bandit.flipX ? -15 : 15),
-      bandit.y + 15,
+      bandit.x + (bandit.flipX ? -ARM_OFFSET : ARM_OFFSET),
+      bandit.y + ARM_OFFSET,
       'arm'
     );
     arm.setFlipX(bandit.flipX);
     arm.setDepth(arm.y);
 
     const index = this.arms.push(arm) - 1;
-    this.armTargets.set(index, arm.y + 80);
+    this.armTargets.set(index, arm.y + SPRITE_SIZE / 2);
 
     arm.setVelocity(between(-5, 5), between(-200, -100));
     arm.setAngularVelocity(between(-200, 200));
@@ -135,7 +156,7 @@ export class Game extends Scene {
     bandit.play('bandit-run');
     bandit.setVelocity(-(BANDIT_SPEED * 1.5), 0);
     bandit.setFlipX(true);
-    bandit.setDisplayOrigin(90, 80);
+    bandit.setDisplayOrigin(originX(false), originY());
 
     this.banditsKilled += 1;
     if (this.banditsKilled >= this.bandits.length) {
@@ -195,7 +216,7 @@ export class Game extends Scene {
 
     this.player.on('animationcomplete-attack', () => {
       this.bandits.forEach((bandit) => {
-        if (this.checkBanditPlayerCollision(bandit)) {
+        if (this.checkAttack(this.player, bandit)) {
           this.killBandit(bandit);
         }
       });
@@ -258,18 +279,18 @@ export class Game extends Scene {
     this.bandits = [];
     for (let i = 0; i < BANDIT_COUNT; i++) {
       const x = randomValue([
-        -100 - (i * WIDTH) / 2,
-        100 + WIDTH + (i * WIDTH) / 2
+        -(SPRITE_SIZE / 2) - (i * WIDTH) / 2,
+        SPRITE_SIZE / 2 + WIDTH + (i * WIDTH) / 2
       ]);
       const y = randomValue([
-        -100 - (i * HEIGHT) / 2,
-        100 + HEIGHT + (i * HEIGHT) / 2
+        -(SPRITE_SIZE / 2) - (i * HEIGHT) / 2,
+        SPRITE_SIZE / 2 + HEIGHT + (i * HEIGHT) / 2
       ]);
 
       const bandit = this.physics.add.sprite(x, y, 'bandit');
 
       bandit.on('animationcomplete-bandit-attack', () => {
-        if (this.checkBanditPlayerCollision(bandit) && this.state === 'play') {
+        if (this.checkAttack(bandit) && this.state === 'play') {
           this.gameLost();
         }
         bandit.play('bandit-walk');
@@ -336,10 +357,10 @@ export class Game extends Scene {
       this.player.setVelocityX(moveX);
       if (moveX < 0) {
         this.player.setFlipX(true);
-        this.player.setDisplayOrigin(90, 80);
+        this.player.setDisplayOrigin(originX(true), originY());
       } else {
         this.player.setFlipX(false);
-        this.player.setDisplayOrigin(70, 80);
+        this.player.setDisplayOrigin(originX(false), originY());
       }
     }
 
@@ -365,7 +386,7 @@ export class Game extends Scene {
         }
       });
 
-      if (this.sheep.every((sheep) => sheep.x >= WIDTH + 100)) {
+      if (this.sheep.every((sheep) => sheep.x >= WIDTH + SPRITE_SIZE / 2)) {
         this.state = 'play';
         this.updateText();
       }
@@ -383,7 +404,7 @@ export class Game extends Scene {
         return;
       }
 
-      if (this.checkBanditPlayerCollision(bandit)) {
+      if (this.checkAttack(bandit)) {
         bandit.play('bandit-attack', true);
         bandit.setVelocity(0);
         return;
@@ -395,10 +416,10 @@ export class Game extends Scene {
 
       if (this.player.x < bandit.x) {
         bandit.setFlipX(true);
-        bandit.setDisplayOrigin(90, 80);
+        bandit.setDisplayOrigin(originX(true), originY());
       } else {
         bandit.setFlipX(false);
-        bandit.setDisplayOrigin(70, 80);
+        bandit.setDisplayOrigin(originX(false), originY());
       }
     });
   }
