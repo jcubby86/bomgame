@@ -6,13 +6,13 @@ const RUN_SPEED = 200;
 
 export class Game extends Scene {
   private player: Phaser.Physics.Arcade.Sprite;
-  private playerDead = false;
   private sheep: Phaser.Physics.Arcade.Sprite[];
   private bandits: Phaser.Physics.Arcade.Sprite[];
   private banditsKilled = 0;
   private arms: Phaser.Physics.Arcade.Sprite[] = [];
   private armTargets: Map<number, number> = new Map();
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+  private state: 'play' | 'win' | 'lose' | 'start' = 'start';
 
   constructor() {
     super('Game');
@@ -56,8 +56,8 @@ export class Game extends Scene {
   }
 
   gameLost() {
+    this.state = 'lose';
     this.player.play('die', true);
-    this.playerDead = true;
     this.bandits.forEach((bandit) => {
       if (bandit.anims.currentAnim?.key === 'bandit-run') return;
       bandit.setVelocity(WALK_SPEED, 0);
@@ -67,6 +67,7 @@ export class Game extends Scene {
   }
 
   gameWon() {
+    this.state = 'win';
     this.sheep.forEach((sheep) => {
       sheep.setVelocity(-WALK_SPEED, 0);
       sheep.setFlipX(true);
@@ -75,6 +76,36 @@ export class Game extends Scene {
       }
       sheep.setY(Phaser.Math.Between(100, 700));
     });
+  }
+
+  createArm(bandit: Phaser.Physics.Arcade.Sprite) {
+    const arm = this.physics.add.sprite(bandit.x + 15, bandit.y + 15, 'arm');
+    arm.setFlipX(bandit.flipX);
+    if (arm.flipX) {
+      arm.setX(arm.x - 30);
+    }
+    arm.setDepth(arm.y);
+
+    const index = this.arms.push(arm) - 1;
+    this.armTargets.set(index, arm.y + 80);
+
+    arm.setVelocityY(Phaser.Math.Between(-200, -100));
+    arm.setAngularVelocity(Phaser.Math.Between(-200, 200));
+    arm.setAccelerationY(1000);
+  }
+
+  killBandit(bandit: Phaser.Physics.Arcade.Sprite) {
+    this.createArm(bandit);
+
+    bandit.play('bandit-run');
+    bandit.setVelocity(-RUN_SPEED, 0);
+    bandit.setFlipX(true);
+    bandit.setDisplayOrigin(90, 80);
+
+    this.banditsKilled += 1;
+    if (this.banditsKilled >= this.bandits.length) {
+      this.gameWon();
+    }
   }
 
   createPlayer() {
@@ -110,40 +141,14 @@ export class Game extends Scene {
     });
 
     this.cursors?.space?.on('down', () => {
-      if (this.playerDead) return;
+      if (this.state !== 'play') return;
       this.player.play('attack');
     });
 
     this.player.on('animationcomplete-attack', () => {
       this.bandits.forEach((bandit) => {
         if (this.checkBanditPlayerCollision(bandit)) {
-          const arm = this.physics.add.sprite(
-            bandit.x + 15,
-            bandit.y + 15,
-            'arm'
-          );
-          arm.setFlipX(bandit.flipX);
-          if (arm.flipX) {
-            arm.setX(arm.x - 30);
-          }
-          arm.setDepth(arm.y);
-
-          const index = this.arms.push(arm) - 1;
-          this.armTargets.set(index, arm.y + 80);
-
-          arm.setVelocityY(Phaser.Math.Between(-200, -100));
-          arm.setAngularVelocity(Phaser.Math.Between(-200, 200));
-          arm.setAccelerationY(500);
-
-          bandit.play('bandit-run');
-          bandit.setVelocity(-RUN_SPEED, 0);
-          bandit.setFlipX(true);
-          bandit.setDisplayOrigin(90, 80);
-
-          this.banditsKilled += 1;
-          if (this.banditsKilled >= this.bandits.length) {
-            this.gameWon();
-          }
+          this.killBandit(bandit);
         }
       });
 
@@ -211,7 +216,7 @@ export class Game extends Scene {
       );
 
       bandit.on('animationcomplete-bandit-attack', () => {
-        if (this.checkBanditPlayerCollision(bandit) && !this.playerDead) {
+        if (this.checkBanditPlayerCollision(bandit) && this.state === 'play') {
           this.gameLost();
         }
         bandit.play('bandit-walk');
@@ -269,13 +274,17 @@ export class Game extends Scene {
   }
 
   updateSheep() {
-    this.sheep.forEach((sheep) => {
-      if (this.banditsKilled < this.bandits.length) {
+    if (this.state === 'start') {
+      this.sheep.forEach((sheep) => {
         if (Phaser.Math.Between(0, 100) < 1) {
           sheep.setVelocityY(-1 * sheep.body!.velocity.y);
         }
+      });
+
+      if (this.sheep.every((sheep) => sheep.x >= 1100)) {
+        this.state = 'play';
       }
-    });
+    }
   }
 
   updateBandits() {
@@ -284,7 +293,7 @@ export class Game extends Scene {
         ['bandit-attack', 'bandit-run'].includes(
           bandit.anims.currentAnim?.key || ''
         ) ||
-        this.playerDead
+        this.state !== 'play'
       ) {
         return;
       }
