@@ -6,6 +6,9 @@ const SHEEP_SPEED = 120;
 const BANDIT_SPEED = 150;
 const PLAYER_SPEED = 200;
 
+const SHEEP_COUNT = 5;
+const BANDIT_COUNT = 5;
+
 function between(min: number, max: number) {
   return Phaser.Math.Between(min, max);
 }
@@ -83,7 +86,7 @@ export class Game extends Scene {
     this.sheep.forEach((sheep) => {
       sheep.setVelocity(-SHEEP_SPEED, 0);
       sheep.setFlipX(true);
-      sheep.setX(WIDTH + between(0, WIDTH));
+      sheep.setX(WIDTH + between(100, WIDTH));
       sheep.setY(between(0, HEIGHT));
     });
     this.updateText('You Win!');
@@ -140,10 +143,20 @@ export class Game extends Scene {
     }
   }
 
+  attack() {
+    if (
+      this.state === 'lose' ||
+      this.player.anims.currentAnim?.key === 'attack'
+    )
+      return;
+    this.player.play('attack');
+  }
+
   createPlayer() {
     this.player = this.physics.add.sprite(WIDTH / 2, HEIGHT / 2, 'ammon', 6);
     this.player.setOrigin(0.5, 0.5);
     this.player.setCollideWorldBounds(true);
+    this.player.setInteractive();
 
     this.player.anims.create({
       key: 'walk',
@@ -173,8 +186,11 @@ export class Game extends Scene {
     });
 
     this.cursors?.space?.on('down', () => {
-      if (this.state !== 'play') return;
-      this.player.play('attack');
+      this.attack();
+    });
+
+    this.player.on('pointerdown', () => {
+      this.attack();
     });
 
     this.player.on('animationcomplete-attack', () => {
@@ -203,7 +219,7 @@ export class Game extends Scene {
     });
 
     this.sheep = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < SHEEP_COUNT; i++) {
       const sheep = this.physics.add.sprite(
         between(0, WIDTH),
         between(0, HEIGHT),
@@ -240,7 +256,7 @@ export class Game extends Scene {
     });
 
     this.bandits = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < BANDIT_COUNT; i++) {
       const x = randomValue([
         -100 - (i * WIDTH) / 2,
         100 + WIDTH + (i * WIDTH) / 2
@@ -284,28 +300,56 @@ export class Game extends Scene {
       return;
     }
 
+    let moveX = 0;
+    let moveY = 0;
+
+    // Keyboard controls
     if (this.cursors?.left.isDown) {
-      this.player.setVelocityX(-1);
-      this.player.setFlipX(true);
-      this.player.setDisplayOrigin(90, 80);
+      moveX = -1;
     } else if (this.cursors?.right.isDown) {
-      this.player.setVelocityX(1);
-      this.player.setFlipX(false);
-      this.player.setDisplayOrigin(70, 80);
+      moveX = 1;
     }
 
     if (this.cursors?.up.isDown) {
-      this.player.setVelocityY(-1);
+      moveY = -1;
     } else if (this.cursors?.down.isDown) {
-      this.player.setVelocityY(1);
+      moveY = 1;
+    }
+
+    // Touch controls - move toward touch position
+    if (this.input.activePointer?.isDown) {
+      const touchX = this.input.activePointer.x;
+      const touchY = this.input.activePointer.y;
+      const dx = touchX - this.player.x;
+      const dy = touchY - this.player.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Only move if touch is far enough away (dead zone)
+      if (distance > 50) {
+        moveX = dx;
+        moveY = dy;
+      }
+    }
+
+    // Apply movement
+    if (moveX !== 0) {
+      this.player.setVelocityX(moveX);
+      if (moveX < 0) {
+        this.player.setFlipX(true);
+        this.player.setDisplayOrigin(90, 80);
+      } else {
+        this.player.setFlipX(false);
+        this.player.setDisplayOrigin(70, 80);
+      }
+    }
+
+    if (moveY !== 0) {
+      this.player.setVelocityY(moveY);
     }
 
     this.player.body?.velocity.normalize().scale(PLAYER_SPEED);
 
-    const velocityX = this.player.body?.velocity.x || 0;
-    const velocityY = this.player.body?.velocity.y || 0;
-
-    if (velocityX !== 0 || velocityY !== 0) {
+    if (moveX !== 0 || moveY !== 0) {
       this.player.play('walk', true);
     } else if (this.player.anims.currentAnim?.key === 'walk') {
       this.player.stop();
