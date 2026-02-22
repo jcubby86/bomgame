@@ -266,7 +266,8 @@ export class Game extends Scene {
   create() {
     this.physics.world.defaults.debugShowBody = true;
     this.cursors = this.input.keyboard?.createCursorKeys();
-    this.add.image(0, 0, 'background').setOrigin(0, 0);
+    const bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
+    bg.setDepth(-HEIGHT);
     this.createPlayer();
     this.createSheep();
     this.createBandits();
