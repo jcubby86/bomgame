@@ -272,7 +272,7 @@ export class Game extends Scene {
     this.createSheep();
     this.createBandits();
 
-    this.updateText('Protect the Sheep!');
+    this.updateText('Defend the Sheep!');
 
     EventBus.emit('current-scene-ready', this);
   }
