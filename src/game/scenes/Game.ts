@@ -96,8 +96,8 @@ export class Game extends Scene {
 
     if (message) {
       this.text = this.add
-        .text(512, 384, message, {
-          fontSize: '48px',
+        .text(WIDTH / 2, HEIGHT / 2, message, {
+          fontSize: WIDTH < 500 ? '24px' : '48px',
           fontStyle: 'bold',
           fontFamily: 'Arial',
           color: '#fff',

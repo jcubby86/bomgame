@@ -3,8 +3,8 @@ import { AUTO, Game, Types } from 'phaser';
 
 // Find out more information about the Game Config at:
 // https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
-export const WIDTH = 1024;
-export const HEIGHT = 768;
+export const WIDTH = Math.min(1024, window.innerWidth);
+export const HEIGHT = Math.min(768, window.innerHeight);
 
 const config: Types.Core.GameConfig = {
   type: AUTO,
