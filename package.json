@@ -5,10 +5,8 @@
   "author": "jcubby86",
   "license": "MIT",
   "scripts": {
-    "start:dev": "node log.js dev & vite --config vite/config.dev.mjs --host",
-    "build": "node log.js build & vite build --config vite/config.prod.mjs",
-    "dev-nolog": "vite --config vite/config.dev.mjs",
-    "build-nolog": "vite build --config vite/config.prod.mjs",
+    "start:dev": "vite --config vite/config.dev.mjs --host",
+    "build": "tsc && vite build --config vite/config.prod.mjs",
     "lint": "eslint --fix",
     "format": "prettier --config .prettierrc --write ."
   },
